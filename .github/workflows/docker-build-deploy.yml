@@ -12,6 +12,11 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+  actions: read
+  packages: write
+
 env:
   REGISTRY: docker.io
   IMAGE_NAME: phygrid/cuda-onnx
