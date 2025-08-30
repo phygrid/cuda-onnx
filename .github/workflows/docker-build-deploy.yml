@@ -121,12 +121,14 @@ jobs:
           if [[ "${{ steps.determine-version.outputs.version-changed }}" == "auto" ]]; then
             git add VERSION
             git commit -m "Auto-increment version to ${VERSION#v} [skip ci]"
+            git pull origin main --rebase
             git push origin main
           fi
           
           # Create and push tag
           if ! git tag -l | grep -q "^$VERSION$"; then
             git tag -a "$VERSION" -m "Release $VERSION"
+            git pull origin main --rebase
             git push origin "$VERSION"
             echo "Created and pushed tag: $VERSION"
           else
@@ -197,6 +199,7 @@ jobs:
             
             git add Dockerfile
             git commit -m "Update version label to $VERSION [skip ci]"
+            git pull origin main --rebase
             git push origin main
           fi
 
