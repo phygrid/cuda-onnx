@@ -29,10 +29,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Configure git to use SSH
-        run: |
-          git config --global url."git@github.com:".insteadOf "https://github.com/"
-
       - name: Determine version and auto-increment if needed
         id: determine-version
         run: |
@@ -113,6 +109,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
+          # Configure git to use HTTPS with token
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          
           # Commit VERSION file changes if auto-incremented
           if [[ "${{ steps.determine-version.outputs.version-changed }}" == "auto" ]]; then
             git add VERSION
@@ -187,6 +186,10 @@ jobs:
           else
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
+            
+            # Configure git to use HTTPS with token
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+            
             git add Dockerfile
             git commit -m "Update version label to $VERSION [skip ci]"
             git push origin main
