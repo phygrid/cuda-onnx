@@ -86,7 +86,7 @@ CMD ["python", "/app/onnx_test.py"]
 
 # Labels
 LABEL maintainer="Phygrid"
-LABEL version="v1.0.7"
+LABEL version="v1.0.8"
 LABEL description="ONNX Runtime base image for efficient CPU/GPU inference"
 LABEL inference.engine="onnx"
 LABEL inference.runtime="onnxruntime-1.16.3"
