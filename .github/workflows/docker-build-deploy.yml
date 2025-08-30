@@ -257,12 +257,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Sync Docker Hub description
-        uses: peter-evans/dockerhub-description@v4
+        uses: meeDamian/sync-readme@v1.0.6
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: ${{ env.IMAGE_NAME }}
-          readme-filepath: ./README.md
+          user: ${{ secrets.DOCKER_USERNAME }}
+          pass: ${{ secrets.DOCKER_PASSWORD }}
+          slug: ${{ env.IMAGE_NAME }}
+          readme: ./README.md
+          description: "ONNX Runtime base image for efficient CPU/GPU inference with multi-architecture support"
 
   notify-failure:
     needs: [version-management, build-and-deploy]
