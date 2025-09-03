@@ -16,8 +16,8 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
         echo "Installing ONNX Runtime GPU 1.22.0 for x64 with CUDA 12.x + cuDNN 9 + Blackwell support..."; \
         python3 -m pip install --no-cache-dir onnxruntime-gpu==1.22.0; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
-        echo "Installing ONNX Runtime GPU 1.22.0 for ARM64/Jetson with CUDA 12.x + cuDNN 9 support..."; \
-        python3 -m pip install --no-cache-dir onnxruntime-gpu==1.22.0; \
+        echo "Installing ONNX Runtime 1.22.0 for ARM64 (CPU-only - GPU wheels not available for ARM64)..."; \
+        python3 -m pip install --no-cache-dir onnxruntime==1.22.0; \
     else \
         echo "Installing ONNX Runtime CPU fallback..."; \
         python3 -m pip install --no-cache-dir onnxruntime==1.22.0; \
