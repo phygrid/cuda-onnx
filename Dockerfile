@@ -14,13 +14,13 @@ ARG TARGETPLATFORM
 # Install ONNX Runtime with architecture-specific packages
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
         echo "Installing ONNX Runtime GPU for x64..."; \
-        python3 -m pip install --no-cache-dir onnxruntime-gpu==1.19.2; \
+        python3 -m pip install --no-cache-dir onnxruntime-gpu==1.16.3; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
         echo "Installing ONNX Runtime GPU for ARM64/Jetson..."; \
-        python3 -m pip install --no-cache-dir onnxruntime-gpu==1.19.2 --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/; \
+        python3 -m pip install --no-cache-dir onnxruntime-gpu==1.16.3; \
     else \
         echo "Installing ONNX Runtime CPU fallback..."; \
-        python3 -m pip install --no-cache-dir onnxruntime==1.19.2; \
+        python3 -m pip install --no-cache-dir onnxruntime==1.16.3; \
     fi
 
 # Install ONNX ecosystem packages
@@ -39,22 +39,12 @@ RUN python3 -m pip install --no-cache-dir \
     librosa==0.10.1 \
     soundfile==0.12.1
 
-# Fix numpy version for ARM64 compatibility after onnxruntime-gpu installation
-RUN if [ "$TARGETARCH" = "arm64" ]; then \
-        echo "Fixing numpy version for ARM64..."; \
-        python3 -m pip install --no-cache-dir numpy==1.23.5 --force-reinstall; \
-    fi
 
 # Set ONNX-specific environment variables
 ENV OMP_NUM_THREADS=4
 ENV ONNX_NUM_THREADS=4
 ENV OPENBLAS_NUM_THREADS=4
 
-# Set TensorRT-specific variables for ARM64 Jetson
-RUN if [ "$TARGETARCH" = "arm64" ]; then \
-        echo 'export TENSORRT_ROOT=/usr/src/tensorrt' >> /etc/environment; \
-    fi
-ENV TENSORRT_ROOT="/usr/src/tensorrt"
 
 # Create ONNX-specific directories
 RUN mkdir -p /app/onnx_models /app/onnx_cache
@@ -75,8 +65,6 @@ def test_onnx_runtime():
         providers = ort.get_available_providers()
         if 'CUDAExecutionProvider' in providers:
             print("✅ CUDA provider available for GPU inference")
-        if 'TensorrtExecutionProvider' in providers:
-            print("✅ TensorRT provider available for optimized inference")
         if 'CPUExecutionProvider' in providers:
             print("✅ CPU provider available")
             

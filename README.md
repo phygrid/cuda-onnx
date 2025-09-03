@@ -144,10 +144,9 @@ The image includes a comprehensive health check:
 docker run --rm phygrid/cuda-onnx:latest python /app/onnx_test.py
 
 # Expected output:
-# ONNX Runtime version: 1.19.2
-# Available providers: ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CPUExecutionProvider']
+# ONNX Runtime version: 1.16.3
+# Available providers: ['CUDAExecutionProvider', 'CPUExecutionProvider']
 # ✅ CUDA provider available for GPU inference
-# ✅ TensorRT provider available for optimized inference (Jetson)
 # ✅ CPU provider available
 # ✅ GPU access test: OK
 # ONNX Runtime setup: OK
@@ -161,7 +160,6 @@ docker run --rm phygrid/cuda-onnx:latest python /app/onnx_test.py
 | `OMP_NUM_THREADS` | `4` | OpenMP thread count |
 | `ONNX_NUM_THREADS` | `4` | ONNX Runtime thread count |
 | `OPENBLAS_NUM_THREADS` | `4` | OpenBLAS thread count |
-| `TENSORRT_ROOT` | `/usr/src/tensorrt` | TensorRT installation path (ARM64 Jetson) |
 
 ### Volume Mounts
 | Path | Purpose |
@@ -234,11 +232,10 @@ LABEL inference.runtime="onnxruntime-1.16.3"
 
 ## 📈 Metrics
 
-- **Image size**: ~1.2GB compressed (AMD64), ~1.4GB (ARM64 with TensorRT)
+- **Image size**: ~1.2GB compressed (AMD64), ~1.4GB (ARM64)
 - **Build time**: ~8-15 minutes (with cache)
 - **Architectures**: AMD64 (Intel/AMD), ARM64 (NVIDIA Jetson)
-- **ONNX Runtime version**: 1.19.2 with CUDA 12 support
-- **CUDA version**: 12.6.2 (ARM64 Jetson support)
-- **TensorRT**: Available on Jetson devices for optimal performance
+- **ONNX Runtime version**: 1.16.3 with GPU support
+- **CUDA version**: 12.8 (ARM64 Jetson support)
 - **GPU support**: NVIDIA Blackwell and earlier architectures
 - **Base image**: phygrid/cuda-base:latest
