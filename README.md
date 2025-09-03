@@ -26,7 +26,7 @@ Built on `phygrid/cuda-base:latest` which includes:
 - Common system dependencies and security features
 
 ### ONNX Specific Additions
-- **ONNX Runtime**: Version 1.22.0 with CUDA 12.x + cuDNN 9 + Blackwell (AMD64), v1.19.0 with GPU support (ARM64 Jetson)
+- **ONNX Runtime**: Version 1.22.0 with CUDA 12.x + cuDNN 9 + Blackwell (AMD64), v1.22.0 CPU-only (ARM64 Jetson)
 - **ONNX Ecosystem**: Core ONNX packages and protobuf
 - **Audio/Video Processing**: librosa, soundfile for multimedia inference
 - **Computer Vision**: OpenCV, scipy, scikit-learn for image processing
@@ -144,12 +144,12 @@ The image includes a comprehensive health check:
 docker run --rm phygrid/cuda-onnx:latest python /app/onnx_test.py
 
 # Expected output:
-# ONNX Runtime version: 1.22.0 (AMD64) / 1.19.0 (ARM64)
-# Available providers: ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CPUExecutionProvider']
-# ✅ CUDA provider available for GPU inference
-# ✅ TensorRT provider available (ARM64 Jetson)
+# ONNX Runtime version: 1.22.0
+# Available providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'] (AMD64)
+# Available providers: ['CPUExecutionProvider'] (ARM64 - build from source needed for GPU)
+# ✅ CUDA provider available for GPU inference (AMD64)
 # ✅ CPU provider available
-# ✅ GPU access test: OK
+# ✅ GPU access test: OK (AMD64) / CPU operations: OK (ARM64)
 # ONNX Runtime setup: OK
 ```
 
