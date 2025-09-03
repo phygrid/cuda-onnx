@@ -26,7 +26,7 @@ Built on `phygrid/cuda-base:latest` which includes:
 - Common system dependencies and security features
 
 ### ONNX Specific Additions
-- **ONNX Runtime**: Version 1.22.0 with CUDA 12.x + cuDNN 9 + Blackwell (AMD64), v1.22.0 CPU-only (ARM64 Jetson)
+- **ONNX Runtime**: Version 1.22.0 with CUDA 12.x + cuDNN 9 + Blackwell (AMD64), v1.22.0 with CUDA + TensorRT built from source (ARM64 Jetson)
 - **ONNX Ecosystem**: Core ONNX packages and protobuf
 - **Audio/Video Processing**: librosa, soundfile for multimedia inference
 - **Computer Vision**: OpenCV, scipy, scikit-learn for image processing
@@ -145,11 +145,11 @@ docker run --rm phygrid/cuda-onnx:latest python /app/onnx_test.py
 
 # Expected output:
 # ONNX Runtime version: 1.22.0
-# Available providers: ['CUDAExecutionProvider', 'CPUExecutionProvider'] (AMD64)
-# Available providers: ['CPUExecutionProvider'] (ARM64 - build from source needed for GPU)
-# ✅ CUDA provider available for GPU inference (AMD64)
+# Available providers: ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CPUExecutionProvider']
+# ✅ CUDA provider available for GPU inference  
+# ✅ TensorRT provider available for optimized inference (ARM64 Jetson)
 # ✅ CPU provider available
-# ✅ GPU access test: OK (AMD64) / CPU operations: OK (ARM64)
+# ✅ GPU access test: OK
 # ONNX Runtime setup: OK
 ```
 
@@ -234,9 +234,9 @@ LABEL inference.runtime="onnxruntime-1.16.3"
 ## 📈 Metrics
 
 - **Image size**: ~1.2GB compressed (AMD64), ~1.4GB (ARM64)
-- **Build time**: ~8-15 minutes (with cache)
+- **Build time**: ~8-15 minutes (AMD64 with cache), ~45-60 minutes (ARM64 source build)
 - **Architectures**: AMD64 (Intel/AMD), ARM64 (NVIDIA Jetson)
-- **ONNX Runtime version**: 1.22.0 with CUDA 12.x + cuDNN 9 + Blackwell support (AMD64), CPU-only (ARM64)
+- **ONNX Runtime version**: 1.22.0 with CUDA 12.x + cuDNN 9 + Blackwell support (AMD64), 1.22.0 with CUDA + TensorRT built from source (ARM64)
 - **CUDA version**: 12.8 (ARM64 Jetson support)
 - **GPU support**: NVIDIA Blackwell and earlier architectures
 - **Base image**: phygrid/cuda-base:latest

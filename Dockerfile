@@ -16,9 +16,25 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
         echo "Installing ONNX Runtime GPU 1.22.0 for x64 with CUDA 12.x + cuDNN 9 + Blackwell support..."; \
         python3 -m pip install --no-cache-dir onnxruntime-gpu==1.22.0; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
-        echo "Installing ONNX Runtime 1.22.0 for ARM64 Jetson (CPU-only - GPU wheels not available)..."; \
-        echo "Note: For GPU acceleration on Jetson, ONNX Runtime must be built from source with CUDA/TensorRT"; \
-        python3 -m pip install --no-cache-dir onnxruntime==1.22.0; \
+        echo "Building ONNX Runtime 1.22.0 from source with CUDA + TensorRT for ARM64 Jetson..."; \
+        apt-get update && apt-get install -y \
+            libprotobuf-dev protobuf-compiler \
+            libcudnn8-dev \
+            libnvinfer-dev libnvinfer-plugin-dev libnvparsers-dev libnvonnxparsers-dev \
+            libcurand-dev libcublas-dev libcufft-dev libcusparse-dev libcusolver-dev \
+            python3-dev python3-numpy python3-setuptools \
+            ninja-build \
+            && rm -rf /var/lib/apt/lists/*; \
+        cd /tmp && git clone --recursive https://github.com/Microsoft/onnxruntime.git --branch v1.22.0 --single-branch && \
+        cd onnxruntime && \
+        ./build.sh --config Release --update --build --parallel --build_wheel \
+            --use_cuda --cuda_home /usr/local/cuda \
+            --cudnn_home /usr/lib/aarch64-linux-gnu \
+            --use_tensorrt --tensorrt_home /usr/src/tensorrt \
+            --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES="5.3;6.2;7.2;8.7" \
+            --cmake_extra_defines onnxruntime_USE_FULL_PROTOBUF=ON && \
+        python3 -m pip install --no-cache-dir dist/*.whl && \
+        cd / && rm -rf /tmp/onnxruntime; \
     else \
         echo "Installing ONNX Runtime CPU fallback..."; \
         python3 -m pip install --no-cache-dir onnxruntime==1.22.0; \
