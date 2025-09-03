@@ -24,10 +24,13 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
             libcurand-dev libcublas-dev libcufft-dev libcusparse-dev libcusolver-dev \
             python3-dev python3-numpy python3-setuptools \
             ninja-build \
+            libflatbuffers-dev flatbuffers-compiler \
             && rm -rf /var/lib/apt/lists/*; \
+        python3 -m pip install --no-cache-dir flatbuffers; \
         cd /tmp && git clone --recursive https://github.com/Microsoft/onnxruntime.git --branch v1.22.0 --single-branch && \
         cd onnxruntime && \
         ./build.sh --config Release --update --build --parallel --build_wheel \
+            --allow_running_as_root \
             --use_cuda --cuda_home /usr/local/cuda \
             --cudnn_home /usr/lib/aarch64-linux-gnu \
             --use_tensorrt --tensorrt_home /usr/src/tensorrt \
