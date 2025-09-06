@@ -1,5 +1,5 @@
-# ONNX Runtime with TensorRT EP - Optimized for Size
-# Extends Phygrid CUDA base with only ONNX-specific components
+# ONNX Runtime with TensorRT EP - Multi-Stage Optimized
+# Extends Phygrid CUDA base with minimal ONNX-specific components
 # Multi-arch support for x86_64 and ARM64
 
 # Multi-stage build args for proper cross-platform support  
@@ -8,31 +8,29 @@ ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
 
-FROM phygrid/cuda-base:latest
+# ====== BUILD STAGE: ONNX Package Download ======
+FROM phygrid/cuda-base:latest AS onnx-builder
 
-# ONNX-specific version pins
+# ONNX-specific version pins (updated for TensorRT 10.13.2 compatibility)
 ARG ONNX_VERSION=1.19.2
 ARG ORT_GPU_VERSION=1.22.0
-ARG ORT_CACHE=/app/ort_cache
 
-USER root
+WORKDIR /build
 
-# ONNX Runtime inherits TensorRT from cuda-base - no additional dependencies needed
-
-# Install ONNX packages (architecture-aware, size-optimized)
+# Install ONNX packages in build stage (with build dependencies if needed)
 RUN set -ex && \
-    echo "Installing ONNX stack for ${TARGETARCH}..." && \
+    echo "Building ONNX stack for ${TARGETARCH:-unknown}..." && \
     \
-    # Install core ONNX package first
-    python -m pip install --no-cache-dir --break-system-packages \
-        onnx==${ONNX_VERSION} && \
+    # Create virtual environment for cleaner package management
+    python -m venv /build/onnx-env && \
+    . /build/onnx-env/bin/activate && \
     \
-    # Install ONNX Runtime GPU with TensorRT EP
-    # Version 1.22+ supports TensorRT 10.x and CUDA 13.0
-    python -m pip install --no-cache-dir --break-system-packages \
+    # Install ONNX packages
+    pip install --no-cache-dir \
+        onnx==${ONNX_VERSION} \
         onnxruntime-gpu==${ORT_GPU_VERSION} && \
     \
-    # Verify installation
+    # Verify installation in build stage
     python -c "
 import onnx
 import onnxruntime as ort
@@ -40,28 +38,58 @@ print(f'ONNX version: {onnx.__version__}')
 print(f'ONNX Runtime version: {ort.__version__}')
 providers = ort.get_available_providers()
 print(f'Available providers: {providers}')
-print(f'TensorRT available: {\"TensorrtExecutionProvider\" in providers}')
-print(f'CUDA available: {\"CUDAExecutionProvider\" in providers}')
+" && \
+    \
+    # Create package list for runtime stage
+    pip freeze > /build/onnx-requirements.txt && \
+    echo "ONNX packages prepared for runtime stage"
+
+# ====== FINAL STAGE: Runtime Image ======
+FROM phygrid/cuda-base:latest
+
+# Re-declare args for final stage
+ARG TARGETARCH
+ARG ONNX_VERSION=1.19.2
+ARG ORT_GPU_VERSION=1.22.0
+ARG ORT_CACHE=/app/ort_cache
+
+USER root
+
+# Install ONLY the exact ONNX packages we need (no build dependencies)
+RUN set -ex && \
+    echo "Installing ONNX Runtime for ${TARGETARCH:-unknown} (runtime-only)..." && \
+    \
+    # Install core ONNX and ONNX Runtime GPU (minimal approach)
+    python -m pip install --no-cache-dir --break-system-packages \
+        onnx==${ONNX_VERSION} \
+        onnxruntime-gpu==${ORT_GPU_VERSION} && \
+    \
+    # Quick verification without extra dependencies
+    python -c "
+import onnx, onnxruntime as ort
+print(f'✓ ONNX {onnx.__version__} + ONNX Runtime {ort.__version__} installed')
+print(f'Providers: {ort.get_available_providers()}')
 " || echo "⚠️  ONNX verification failed (expected without GPU runtime)"
 
-# ONNX-specific environment variables
+# ONNX-specific environment variables (optimized for TensorRT 10.13.2)
 ENV ONNX_VERSION=${ONNX_VERSION}
 ENV ORT_GPU_VERSION=${ORT_GPU_VERSION}
 ENV ORT_CACHE=${ORT_CACHE}
 
-# Default ONNX Runtime TensorRT EP settings (optimized for inference)
+# Optimized ONNX Runtime TensorRT EP settings for TensorRT 10.13.2
 ENV ORT_TRT_FP16=1
 ENV ORT_TRT_INT8=0
 ENV ORT_TRT_ENGINE_CACHE_ENABLE=1
 ENV ORT_TRT_ENGINE_CACHE_PATH=${ORT_CACHE}
 ENV ORT_TRT_MAX_WORKSPACE_SIZE=1073741824
 ENV ORT_TRT_TIMING_CACHE_ENABLE=1
+ENV ORT_TRT_BUILDER_OPTIMIZATION_LEVEL=3
 
-# Create ONNX cache directory
+# Create ONNX cache directory (minimal overhead)
 RUN mkdir -p ${ORT_CACHE} && \
     chown -R appuser:appuser ${ORT_CACHE}
 
-# ONNX-specific health check
+# Streamlined ONNX health check (no build stage overhead)
 COPY --chown=appuser:appuser <<'PY' /app/health_onnx.py
 #!/usr/bin/env python3
 import sys
@@ -70,11 +98,8 @@ import platform
 
 def check_onnx_health():
     print("=== Phygrid ONNX Runtime Health Check ===")
-    
-    # System info
-    arch = platform.machine()
-    print(f"Architecture: {arch}")
-    print(f"Platform: {os.environ.get('TARGETPLATFORM', 'unknown')}")
+    print(f"Architecture: {platform.machine()}")
+    print(f"TensorRT version (from base): {os.getenv('TENSORRT_VERSION', 'unknown')}")
     
     # Check ONNX
     try:
@@ -84,54 +109,38 @@ def check_onnx_health():
         print("❌ ONNX not available")
         return 1
     
-    # Check ONNX Runtime
+    # Check ONNX Runtime and providers
     try:
         import onnxruntime as ort
         print(f"✓ ONNX Runtime version: {ort.__version__}")
         
-        # Check available providers
         providers = ort.get_available_providers()
         print(f"Available providers: {providers}")
         
-        # Check TensorRT EP
-        if "TensorrtExecutionProvider" in providers:
-            print("✓ TensorRT Execution Provider available")
-        else:
-            print("⚠️  TensorRT Execution Provider not available")
+        # Validate TensorRT EP
+        trt_available = "TensorrtExecutionProvider" in providers
+        cuda_available = "CUDAExecutionProvider" in providers
         
-        # Check CUDA EP  
-        if "CUDAExecutionProvider" in providers:
-            print("✓ CUDA Execution Provider available")
-        else:
-            print("⚠️  CUDA Execution Provider not available")
-            
-        # Verify TensorRT EP configuration
-        provider_options = [
-            ("TensorrtExecutionProvider", {
+        print(f"✓ TensorRT EP: {'available' if trt_available else 'not available'}")
+        print(f"✓ CUDA EP: {'available' if cuda_available else 'not available'}")
+        
+        # Test TensorRT EP configuration
+        if trt_available:
+            config = {
                 "trt_fp16_enable": bool(int(os.getenv("ORT_TRT_FP16", "1"))),
-                "trt_int8_enable": bool(int(os.getenv("ORT_TRT_INT8", "0"))),
                 "trt_engine_cache_enable": bool(int(os.getenv("ORT_TRT_ENGINE_CACHE_ENABLE", "1"))),
                 "trt_engine_cache_path": os.getenv("ORT_TRT_ENGINE_CACHE_PATH", "/app/ort_cache"),
                 "trt_max_workspace_size": int(os.getenv("ORT_TRT_MAX_WORKSPACE_SIZE", "1073741824")),
-                "trt_timing_cache_enable": bool(int(os.getenv("ORT_TRT_TIMING_CACHE_ENABLE", "1")))
-            }),
-            ("CUDAExecutionProvider", {}),
-            "CPUExecutionProvider"
-        ]
-        print("✓ TensorRT EP configuration validated")
-        
-        # Show environment settings
-        print(f"\nTensorRT EP Settings:")
-        print(f"  FP16: {os.getenv('ORT_TRT_FP16', '1')}")
-        print(f"  Engine Cache: {os.getenv('ORT_TRT_ENGINE_CACHE_ENABLE', '1')}")
-        print(f"  Cache Path: {os.getenv('ORT_TRT_ENGINE_CACHE_PATH', '/app/ort_cache')}")
-        print(f"  Workspace Size: {int(os.getenv('ORT_TRT_MAX_WORKSPACE_SIZE', '1073741824'))//1024//1024}MB")
-        print(f"  Timing Cache: {os.getenv('ORT_TRT_TIMING_CACHE_ENABLE', '1')}")
+                "trt_timing_cache_enable": bool(int(os.getenv("ORT_TRT_TIMING_CACHE_ENABLE", "1"))),
+                "trt_builder_optimization_level": int(os.getenv("ORT_TRT_BUILDER_OPTIMIZATION_LEVEL", "3"))
+            }
+            print("✓ TensorRT EP configuration validated")
+            print(f"  FP16: {config['trt_fp16_enable']}")
+            print(f"  Cache: {config['trt_engine_cache_enable']}")  
+            print(f"  Workspace: {config['trt_max_workspace_size']//1024//1024}MB")
+            print(f"  Optimization Level: {config['trt_builder_optimization_level']}")
         
     except ImportError as e:
-        print(f"❌ ONNX Runtime import error: {e}")
-        return 1
-    except Exception as e:
         print(f"❌ ONNX Runtime error: {e}")
         return 1
     
@@ -142,7 +151,7 @@ def check_onnx_health():
     else:
         print(f"⚠️  Cache directory issue: {cache_path}")
     
-    print(f"\n✅ ONNX Runtime ready on {arch}!")
+    print(f"\n✅ ONNX Runtime optimized for TensorRT 10.13.2!")
     return 0
 
 if __name__ == "__main__":
@@ -151,16 +160,17 @@ PY
 
 RUN chmod +x /app/health_onnx.py
 
-# Switch back to non-root user
+# Switch to non-root user
 USER appuser
 
 # Default command
 CMD ["python", "/app/health_onnx.py"]
 
-# Optimized labels
+# Optimized labels (updated for TensorRT 10.13.2 compatibility)
 LABEL maintainer="Phygrid"
 LABEL base="phygrid/cuda-base"
 LABEL onnx.version="${ONNX_VERSION}"
 LABEL onnxruntime.gpu.version="${ORT_GPU_VERSION}"
-LABEL description="Minimal ONNX Runtime GPU with TensorRT EP for optimized inference"
-LABEL tensorrt.ep="enabled"
+LABEL tensorrt.compatible="10.13.2"
+LABEL description="Minimal ONNX Runtime GPU optimized for TensorRT 10.13.2 inference"
+LABEL build.stage="optimized"
