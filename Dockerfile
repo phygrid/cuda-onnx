@@ -17,12 +17,7 @@ ARG ORT_CACHE=/app/ort_cache
 
 USER root
 
-# Install ONLY ONNX-specific dependencies (minimal approach)
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    # Only what's needed for ONNX model loading and processing
-    libprotobuf23 \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+# ONNX Runtime inherits TensorRT from cuda-base - no additional dependencies needed
 
 # Install ONNX packages (architecture-aware, size-optimized)
 RUN set -ex && \
