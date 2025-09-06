@@ -2,13 +2,13 @@
 # Extends Phygrid CUDA base with only ONNX-specific components
 # Multi-arch support for x86_64 and ARM64
 
-# Multi-stage build args for proper cross-platform support
+# Multi-stage build args for proper cross-platform support  
 ARG TARGETPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
 
-FROM --platform=$TARGETPLATFORM phygrid/cuda-base:latest
+FROM phygrid/cuda-base:latest
 
 # ONNX-specific version pins
 ARG ONNX_VERSION=1.19.2
