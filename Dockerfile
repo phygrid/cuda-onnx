@@ -31,14 +31,7 @@ RUN set -ex && \
         onnxruntime-gpu==${ORT_GPU_VERSION} && \
     \
     # Verify installation in build stage
-    python -c "
-import onnx
-import onnxruntime as ort
-print(f'ONNX version: {onnx.__version__}')
-print(f'ONNX Runtime version: {ort.__version__}')
-providers = ort.get_available_providers()
-print(f'Available providers: {providers}')
-" && \
+    python -c "import onnx; import onnxruntime as ort; print(f'ONNX version: {onnx.__version__}'); print(f'ONNX Runtime version: {ort.__version__}'); print(f'Available providers: {ort.get_available_providers()}')" && \
     \
     # Create package list for runtime stage
     pip freeze > /build/onnx-requirements.txt && \
@@ -65,11 +58,7 @@ RUN set -ex && \
         onnxruntime-gpu==${ORT_GPU_VERSION} && \
     \
     # Quick verification without extra dependencies
-    python -c "
-import onnx, onnxruntime as ort
-print(f'✓ ONNX {onnx.__version__} + ONNX Runtime {ort.__version__} installed')
-print(f'Providers: {ort.get_available_providers()}')
-" || echo "⚠️  ONNX verification failed (expected without GPU runtime)"
+    python -c "import onnx, onnxruntime as ort; print(f'✓ ONNX {onnx.__version__} + ONNX Runtime {ort.__version__} installed'); print(f'Providers: {ort.get_available_providers()}')" || echo "⚠️  ONNX verification failed (expected without GPU runtime)"
 
 # ONNX-specific environment variables (optimized for TensorRT 10.13.2)
 ENV ONNX_VERSION=${ONNX_VERSION}
