@@ -12,7 +12,7 @@ ARG TARGETVARIANT
 FROM phygrid/cuda-base:latest AS onnx-builder
 
 # ONNX-specific version pins (updated for TensorRT 10.13.2 compatibility)
-ARG ONNX_VERSION=1.19.2
+ARG ONNX_VERSION=1.19.0
 ARG ORT_GPU_VERSION=1.22.0
 
 WORKDIR /build
@@ -42,7 +42,7 @@ FROM phygrid/cuda-base:latest
 
 # Re-declare args for final stage
 ARG TARGETARCH
-ARG ONNX_VERSION=1.19.2
+ARG ONNX_VERSION=1.19.0
 ARG ORT_GPU_VERSION=1.22.0
 ARG ORT_CACHE=/app/ort_cache
 
