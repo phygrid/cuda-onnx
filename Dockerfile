@@ -52,10 +52,13 @@ USER root
 RUN set -ex && \
     echo "Installing ONNX Runtime for ${TARGETARCH:-unknown} (runtime-only)..." && \
     \
-    # Install core ONNX and ONNX Runtime GPU (minimal approach)
+    # Install core ONNX and ONNX Runtime GPU + common CV packages
     python -m pip install --no-cache-dir --break-system-packages \
         onnx==${ONNX_VERSION} \
-        onnxruntime-gpu==${ORT_GPU_VERSION} && \
+        onnxruntime-gpu==${ORT_GPU_VERSION} \
+        opencv-python-headless>=4.10 \
+        scipy>=1.12 \
+        huggingface-hub>=0.23 && \
     \
     # Quick verification without extra dependencies
     python -c "import onnx, onnxruntime as ort; print(f'✓ ONNX {onnx.__version__} + ONNX Runtime {ort.__version__} installed'); print(f'Providers: {ort.get_available_providers()}')" || echo "⚠️  ONNX verification failed (expected without GPU runtime)"
@@ -131,6 +134,16 @@ def check_onnx_health():
         
     except ImportError as e:
         print(f"❌ ONNX Runtime error: {e}")
+        return 1
+    
+    # Check additional packages from this layer
+    try:
+        import cv2, scipy, huggingface_hub
+        print(f"✓ OpenCV version: {cv2.__version__}")
+        print(f"✓ SciPy version: {scipy.__version__}")
+        print(f"✓ Hugging Face Hub version: {huggingface_hub.__version__}")
+    except ImportError as e:
+        print(f"❌ Missing CV package: {e}")
         return 1
     
     # Check cache directory
